@@ -292,6 +292,37 @@
         font-size: 1rem;
     }
 
+    /* Action menu styles */
+    .action-buttons {
+        position: relative;
+    }
+    .action-menu {
+        display: none;
+        position: absolute;
+        right: 0;
+        top: 25px;
+        background: #fff;
+        border: 1px solid #ddd;
+        border-radius: 6px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        z-index: 10;
+        min-width: 100px;
+    }
+    .action-menu button {
+        display: block;
+        width: 100%;
+        background: none;
+        color: #333;
+        border: none;
+        padding: 10px 15px;
+        text-align: left;
+        cursor: pointer;
+        font-size: 1em;
+    }
+    .action-menu button:hover {
+        background: #ffe6e6;
+    }
+
     /* Responsive */
     @media (max-width: 700px) {
         #container {
@@ -511,6 +542,7 @@
             : `${last}, ${first}`;
     }
 
+    // Replace your renderInventory function with this improved version:
     function renderInventory(filterText = '') {
         inventoryTableBody.innerHTML = '';
         const filteredItems = inventoryItems.filter(item => {
@@ -548,29 +580,51 @@
                 <td data-label="Classification">${item.classification}</td>
                 <td data-label="More" class="action-buttons" style="text-align:center;">
                     <span style="font-size: 1.8em; cursor:pointer;" title="More actions">&#8942;</span>
-                    <div style="display:none;">
-                        ${
-                            loggedInUser && loggedInUser.is_admin
-                            ? `<button class="edit-btn" aria-label="Edit item ${item.description}">Edit</button>
-                               <button class="delete-btn" aria-label="Delete item ${item.description}">Delete</button>`
-                            : ''
-                        }
-                    </div>
+                    ${
+                        loggedInUser && loggedInUser.is_admin
+                        ? `<div class="action-menu">
+                                <button class="edit-btn" aria-label="Edit item ${item.description}">Edit</button>
+                                <button class="delete-btn" aria-label="Delete item ${item.description}">Delete</button>
+                           </div>`
+                        : ''
+                    }
                 </td>
             `;
             inventoryTableBody.appendChild(tr);
 
             const dots = tr.querySelector('span[title="More actions"]');
-            const actionsDiv = tr.querySelector('div');
-            dots.addEventListener('click', () => {
-                actionsDiv.style.display = actionsDiv.style.display === 'block' ? 'none' : 'block';
-            });
-
-            if (loggedInUser && loggedInUser.is_admin) {
-                actionsDiv.querySelector('.edit-btn').addEventListener('click', () => startEditItem(originalIndex));
-                actionsDiv.querySelector('.delete-btn').addEventListener('click', () => deleteItem(originalIndex));
+            const menu = tr.querySelector('.action-menu');
+            if (dots && menu) {
+                dots.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Hide any other open menus
+                    document.querySelectorAll('.action-menu').forEach(m => {
+                        if (m !== menu) m.style.display = 'none';
+                    });
+                    // Toggle this menu
+                    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                });
+            }
+            if (loggedInUser && loggedInUser.is_admin && menu) {
+                menu.querySelector('.edit-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    startEditItem(originalIndex);
+                    menu.style.display = 'none';
+                });
+                menu.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteItem(originalIndex);
+                    menu.style.display = 'none';
+                });
             }
         });
+
+        // Only add this ONCE, outside the loop!
+        document.addEventListener('click', function hideMenus() {
+            document.querySelectorAll('.action-menu').forEach(menu => {
+                menu.style.display = 'none';
+            });
+        }, { once: true });
     }
 
     function startEditItem(index) {
